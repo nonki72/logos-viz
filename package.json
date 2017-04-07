@@ -1,0 +1,43 @@
+{
+  "name": "logos-viz",
+  "version": "0.1.0",
+  "description": "Visualization tool for Logos",
+  "repository": "https://github.com/jcote/logos-viz.git",
+  "private": true,
+  "scripts": {
+    "start": "node app.js",
+    "monitor": "nodemon app.js",
+    "deploy": "gcloud app deploy app.yaml",
+    "test": "mocha"
+  },
+  "author": "Jordan Cote",
+  "license": "None",
+  "semistandard": {
+    "globals": [
+      "after",
+      "afterEach",
+      "before",
+      "beforeEach",
+      "describe",
+      "it"
+    ]
+  },
+  "dependencies": {
+    "@google-cloud/datastore": "^0.1.1",
+    "async": "^2.1.4",
+    "body-parser": "^1.15.2",
+    "express": "^4.14.0",
+    "jade": "^1.11.0",
+    "lodash": "^4.14.2",
+    "prompt": "^1.0.0"
+  },
+  "devDependencies": {
+    "mocha": "^3.0.2",
+    "nodejs-repo-tools": "git+https://github.com/GoogleCloudPlatform/nodejs-repo-tools.git#21daa823090c43fb667157c8b5b0c3b7f45a8357",
+    "proxyquire": "^1.7.10",
+    "sinon": "^1.17.5"
+  },
+  "engines": {
+    "node": ">=0.12.7"
+  }
+}
