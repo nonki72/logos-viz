@@ -27,7 +27,22 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 
 
 // Get JSON data
-treeJSON = d3.json("flare.json", function(error, treeData) {
+var oReq = new XMLHttpRequest();
+oReq.open("GET", "api/tree");
+oReq.onload = function(oEvent) {
+  if (oReq.status == 200) {
+    var responseJson = JSON.parse(oReq.responseText);
+    dndTree(responseJson);
+  } else {
+    document.appendChild(document.createTextNode("Error occurred. "));
+    if (responseJson) {
+      document.appendChild(document.createTextNode(responseJson.message));
+    }
+  }
+};
+oReq.send();
+
+function dndTree(treeData) {
 
     // Calculate total nodes, max label length
     var totalNodes = 0;
@@ -547,4 +562,4 @@ treeJSON = d3.json("flare.json", function(error, treeData) {
     // Layout the tree initially and center on the root node.
     update(root);
     centerNode(root);
-});
+};

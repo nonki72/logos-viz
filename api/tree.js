@@ -24,6 +24,44 @@ var router = express.Router();
 // Automatically parse request body as JSON
 router.use(bodyParser.json());
 
+function addDefsToChildren(node) {
+  if (!('children' in node)) { 
+    node.children = [];
+  }
+  if (node.type == "sub") {
+    node.name = node.type + "(" + node.styp + "):" + node.id.toString();
+  } else if (node.type == "abs") {
+    node.name = node.type + "(" + node.name + "):" + node.id.toString();
+  } else if (node.type == "id") {
+    node.name = node.type + "(" + node.indx + "):" + node.id.toString();
+  } else {
+    node.name = node.type + ":" + node.id.toString();
+  }
+  if ('def1' in node && node.def1 !== null && typeof node.def1 === 'object') {
+    node.children.push(node.def1);
+    addDefsToChildren(node.def1);
+  } else if ('def1' in node && typeof node.def1 === 'string') {
+    node.children.push({"name": node.def1});
+  }
+  if ('def2' in node && node.def2 !== null && typeof node.def2 === 'object') {
+    node.children.push(node.def2);
+    addDefsToChildren(node.def2);
+  } else if ('def2' in node && typeof node.def2 === 'string') {
+    node.children.push({"name": node.def2});
+  }
+}
+
+function toDndTreeFormat(tree) {
+  var dndTree = {"name": "root", "children":[]};
+  var keys = Object.keys(tree);
+  for(var i = 0; i < keys.length; i++) {
+    var id = keys[i];
+    var node = tree[id];
+    addDefsToChildren(node);
+    dndTree.children.push(node);
+  }
+  return dndTree;
+}
 
 /**
  * GET /api/tree
@@ -37,7 +75,8 @@ router.get('/', function get (req, res, next) {
    if (err) {
     return next(err);
    }
-   res.json(tree);
+   var dndTree = toDndTreeFormat(tree);
+   res.json(dndTree);
  });
 });
 
