@@ -27,7 +27,7 @@ app.set('trust proxy', true);
 app.use('/', express.static('static'));
 
 // entities
-app.use('/api/entities', require('./api/entities'));
+app.use('/api/tree', require('./api/tree'));
 
 // Basic 404 handler
 app.use(function (req, res) {

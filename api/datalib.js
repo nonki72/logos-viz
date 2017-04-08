@@ -161,6 +161,79 @@ function createSubstitution (subType, location1, location2, cb) {
 
 }
 
+// id of entity which matches either def1 or def2 of node in tree
+function applyEntityToAvailableChild(id, entity, node) {
+	// figure out if it matches def1 or def2
+	if (node.def1 == id) {
+		// apply the entity, replacing its reference
+		node.def1 = entity;
+		if (!node.def2) {
+			delete availableChildMap[id];
+		}
+	} else if (node.def2 == id) {
+		node.def2 = entity;
+		if (node.type == 'abs' || !node.def1) {
+			delete availableChildMap[id];
+		}
+	} else {
+		throw new Error("Stale value in map: " + id);
+	}	
+}
+
+function readAll (tree, availableChildMap, cb) {
+	const query = datastore.ds.createQuery('Diary')
+	.filter('type', '!=', 'id')
+	.limit(100);
+  datastore.ds.runQuery(query)
+   .then((results) => {
+   	var entities = results[0];
+  	if (entities.length) {
+  		Object.keys(entities).forEach(function(key) {
+  			var entity = entities[key];
+  			var id = entity[datastore.ds.KEY]['id'];
+  			if (id in availableChildMap) {
+  				// this entity's id was found in the listing of available references
+  				// obtain the node(s) that advertise and replace the references with the entity
+  				// and then erasing the advertisement
+					var nodes = availableChildMap[id];
+					for (var i = 0; i < nodes.length; i++) {
+						applyEntityToAvailableChild(id, entity, nodes[i]);
+					}
+  			} else {
+  				// simple case, add to root node
+  				tree[id] = entity;
+  			}
+  			var def1pulled = false;
+  			var def2pulled = false;
+				// also check all root children to match def1 or def2
+				// and pull them in
+				if (entity.def1 && entity.def1 in tree) {
+					var def1id = entity.def1;
+					entity.def1 = tree[def1id];
+					delete tree[def1id];
+					def1pulled = true;
+				}
+				if (entity.def2 && entity.def2 in tree) {
+					var def2id = entity.def2;
+					entity.def2 = tree[def2id];
+					delete tree[def2id];
+					def2pulled = true;
+				}
+  			// advertise open references (if any)
+				if ((entity.def1 && !def1pulled) || (entity.def2 && !def1pulled)) {
+					availableChildMap[id] = entity;
+				}
+  		});
+  		return cb(null);
+  	}
+
+		// if none found
+		return cb(null);
+	}).catch((reason) => {
+    console.log("Diary readall query error: " + reason);
+  });
+
+}
 
 module.exports = {
 	readOrCreateAbstraction: readOrCreateAbstraction,
@@ -168,5 +241,6 @@ module.exports = {
 	readOrCreateIdentifier: readOrCreateIdentifier,
 	readFreeIdentifier: readFreeIdentifier,
 	createFreeIdentifier: createFreeIdentifier,
-	createSubstitution: createSubstitution
+	createSubstitution: createSubstitution,
+	readAll: readAll
 };

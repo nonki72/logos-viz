@@ -26,17 +26,19 @@ router.use(bodyParser.json());
 
 
 /**
- * GET /api/entities/:id
+ * GET /api/tree
  *
  * Retrieve a entity.
  */
 router.get('/', function get (req, res, next) {
-  // dataLib.read(req.params.entity, function (err, entity) {
-  //   if (err) {
-      return next('err');
-  //   }
-  //   res.json(entity);
-  // });
+  var tree = {};
+  var availableChildMap = {};
+  dataLib.readAll(tree, availableChildMap, function (err) {
+   if (err) {
+    return next('err');
+   }
+   res.json(tree);
+ });
 });
 
 
