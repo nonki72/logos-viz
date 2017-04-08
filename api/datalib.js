@@ -182,17 +182,14 @@ function applyEntityToAvailableChild(id, entity, node) {
 
 function readAll (tree, availableChildMap, cb) {
 	const query = datastore.ds.createQuery('Diary')
-	.filter('type', '!=', 'id')
 	.limit(100);
-  datastore.ds.runQuery(query)
-   .then((results) => {
-   	var entities = results[0];
-  	if (entities.length) {
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
   		Object.keys(entities).forEach(function(key) {
-  			var entity = entities[key];
-  			var id = entity[datastore.ds.KEY]['id'];
+  			var entity = datastore.fromDatastore(entities[key]);
+  			var id = entity.id;
+  			// see if this entity's id is found in the listing of available child references
   			if (id in availableChildMap) {
-  				// this entity's id was found in the listing of available references
   				// obtain the node(s) that advertise and replace the references with the entity
   				// and then erasing the advertisement
 					var nodes = availableChildMap[id];
@@ -229,9 +226,7 @@ function readAll (tree, availableChildMap, cb) {
 
 		// if none found
 		return cb(null);
-	}).catch((reason) => {
-    console.log("Diary readall query error: " + reason);
-  });
+	});
 
 }
 

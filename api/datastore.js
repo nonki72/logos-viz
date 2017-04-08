@@ -42,10 +42,15 @@ function fromDatastore (obj) {
     obj.data = {};
   }
   Object.getOwnPropertyNames(obj).forEach(function(name) {
-    if (name == 'data') return;
+    if (name == 'data' || name == 'key') return;
     obj.data[name] = obj[name];
   });
-  obj.data.id = obj[Datastore.KEY]['id'];
+  if (Datastore.KEY in obj) {
+    obj.data.id = obj[Datastore.KEY]['id'];
+  }
+  if ('key' in obj) {
+    obj.data.id = obj.key.id;
+  }
   return obj.data;
 }
 

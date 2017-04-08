@@ -35,7 +35,7 @@ router.get('/', function get (req, res, next) {
   var availableChildMap = {};
   dataLib.readAll(tree, availableChildMap, function (err) {
    if (err) {
-    return next('err');
+    return next(err);
    }
    res.json(tree);
  });
