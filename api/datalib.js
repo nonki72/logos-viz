@@ -180,7 +180,7 @@ function applyEntityToAvailableChild(id, entity, node) {
 	}	
 }
 
-function readAll (tree, availableChildMap, cb) {
+function readAll (tree, availableChildMap, totalExpressionMap, cb) {
 	const query = datastore.ds.createQuery('Diary')
 	.limit(100);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
@@ -188,6 +188,8 @@ function readAll (tree, availableChildMap, cb) {
   		Object.keys(entities).forEach(function(key) {
   			var entity = datastore.fromDatastore(entities[key]);
   			var id = entity.id;
+  			// store reference in expression map
+  			totalExpressionMap[id] = entity;
   			// see if this entity's id is found in the listing of available child references
   			if (id in availableChildMap) {
   				// obtain the node(s) that advertise and replace the references with the entity

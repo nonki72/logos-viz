@@ -24,40 +24,66 @@ var router = express.Router();
 // Automatically parse request body as JSON
 router.use(bodyParser.json());
 
-function addDefsToChildren(node) {
+function getExpressionFromDef(def, totalExpressionMap) {
+  if (def !== null && typeof def === 'object') {
+    if ('expression' in def) {
+      return def.expression;
+    } else {
+      return totalExpressionMap[def.id].expression; // assume already made
+    }
+  } else {
+    addNameAndDefsToChildren(totalExpressionMap[def], totalExpressionMap);
+    return totalExpressionMap[def].expression;
+  }
+}
+
+function addNameAndDefsToChildren(node, totalExpressionMap) {
+  if (node.expression) return;
   if (!('children' in node)) { 
     node.children = [];
   }
-  if (node.type == "sub") {
-    node.name = node.type + "(" + node.styp + "):" + node.id.toString();
-  } else if (node.type == "abs") {
-    node.name = node.type + "(" + node.name + "):" + node.id.toString();
-  } else if (node.type == "id") {
-    node.name = node.type + "(" + node.indx + "):" + node.id.toString();
-  } else {
-    node.name = node.type + ":" + node.id.toString();
-  }
+  // add 'def's to children
   if ('def1' in node && node.def1 !== null && typeof node.def1 === 'object') {
     node.children.push(node.def1);
-    addDefsToChildren(node.def1);
+    addNameAndDefsToChildren(node.def1, totalExpressionMap);
   } else if ('def1' in node && typeof node.def1 === 'string') {
     node.children.push({"name": node.def1});
   }
   if ('def2' in node && node.def2 !== null && typeof node.def2 === 'object') {
     node.children.push(node.def2);
-    addDefsToChildren(node.def2);
+    addNameAndDefsToChildren(node.def2, totalExpressionMap);
   } else if ('def2' in node && typeof node.def2 === 'string') {
     node.children.push({"name": node.def2});
   }
+
+  // add name and expression
+  if (node.type == "sub") {
+    node.expression = getExpressionFromDef(node.def2, totalExpressionMap);
+    node.name = "sub(" + node.styp + "):" + node.id.toString();
+  } else if (node.type == "abs") {
+    node.expression = "λ" + node.name + "." + getExpressionFromDef(node.def2, totalExpressionMap);
+    node.name = "abs(" + node.name + "):" + node.id.toString() + " => " + node.expression;
+  } else if (node.type == "app") {
+    node.expression = getExpressionFromDef(node.def1, totalExpressionMap) 
+                    + getExpressionFromDef(node.def2, totalExpressionMap);
+    node.name = "app:" + node.id.toString() + " => " + node.expression;
+  } else if (node.type == "id") {
+    node.expression = "[" + node.indx + "]";
+    node.name = "id(" + node.indx + "):" + node.id.toString();
+  } else {
+    throw new Error("unknown expression type:" + node.type);
+  }
+  totalExpressionMap[node.id].expression = node.expression;
+
 }
 
-function toDndTreeFormat(tree) {
+function toDndTreeFormat(tree, totalExpressionMap) {
   var dndTree = {"name": "root", "children":[]};
   var keys = Object.keys(tree);
   for(var i = 0; i < keys.length; i++) {
     var id = keys[i];
     var node = tree[id];
-    addDefsToChildren(node);
+    addNameAndDefsToChildren(node, totalExpressionMap);
     dndTree.children.push(node);
   }
   return dndTree;
@@ -71,11 +97,12 @@ function toDndTreeFormat(tree) {
 router.get('/', function get (req, res, next) {
   var tree = {};
   var availableChildMap = {};
-  dataLib.readAll(tree, availableChildMap, function (err) {
+  var totalExpressionMap = {};
+  dataLib.readAll(tree, availableChildMap, totalExpressionMap, function (err) {
    if (err) {
     return next(err);
    }
-   var dndTree = toDndTreeFormat(tree);
+   var dndTree = toDndTreeFormat(tree, totalExpressionMap);
    res.json(dndTree);
  });
 });
