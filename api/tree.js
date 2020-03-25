@@ -31,14 +31,16 @@ function getExpressionFromDef(def, totalExpressionMap) {
     } else {
       return totalExpressionMap[def.id].expression; // assume already made
     }
-  } else {
+  } else if (def in totalExpressionMap) {
     addNameAndDefsToChildren(totalExpressionMap[def], totalExpressionMap);
     return totalExpressionMap[def].expression;
+  } else {
+    return "[?]";
   }
 }
 
 function addNameAndDefsToChildren(node, totalExpressionMap) {
-  if (node.expression) return;
+  if ('expression' in node && node.expression !== null) return;
   if (!('children' in node)) { 
     node.children = [];
   }
@@ -70,6 +72,9 @@ function addNameAndDefsToChildren(node, totalExpressionMap) {
   } else if (node.type == "id") {
     node.expression = "[" + node.indx + "]";
     node.name = "id(" + node.indx + "):" + node.id.toString();
+  } else if (node.type == "free") {
+    node.expression = "[" + node.name + "]";
+    node.name = "free(" + node.name + "):" + node.id.toString();
   } else {
     throw new Error("unknown expression type:" + node.type);
   }

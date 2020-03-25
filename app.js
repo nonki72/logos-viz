@@ -23,7 +23,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 app.set('trust proxy', true);
 
-// Use the built-in express middleware for serving static files from './playcanvas'
+// Use the built-in express middleware for serving static files from './static'
 app.use('/', express.static('static'));
 
 // entities
@@ -45,7 +45,7 @@ app.use(function (err, req, res, next) {
 
 if (module === require.main) {
   // Start the server
-  var server = app.listen(80, function () {
+  var server = app.listen(9090, function () {
     var port = server.address().port;
     console.log('App listening on port %s', port);
   });
