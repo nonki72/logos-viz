@@ -24,11 +24,14 @@
   },
   "dependencies": {
     "@google-cloud/datastore": "^5.1.0",
+    "@mysql/xdevapi": "^8.0.33",
     "async": "^2.1.4",
     "body-parser": "^1.15.2",
     "express": "^4.14.0",
     "jade": "^1.11.0",
     "lodash": "^4.14.2",
+    "mongodb": "^5.7.0",
+    "mysql": "^2.18.1",
     "prompt": "^1.0.0"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 'use strict';
 var mongo = require('mongodb');
-const mongoConfig = require('../keys/mongo.json');
+const mongoConfig = require('../config/mongo.json');
 var MongoClient = mongo.MongoClient;
 var ObjectID = mongo.ObjectID;
 const Sql = require('./sql');
@@ -9,20 +9,28 @@ const connectOption = {
     useNewUrlParser: true,
     useUnifiedTopology: true
 }
-var _client = null;
+var client = null;
+var db = null;
 
 
 async function getDb() {
-	try {
-		if (_client != null) return _client;
-		var url = mongoConfig.url;
-		_client = await MongoClient.connect(url, connectOption).catch(err => {
-			console.error(err);
+	if (db != null) return db;
+	const url = mongoConfig.url;
+
+	const deferred = new Promise((resolve, reject) => {
+		MongoClient.connect(url, (err, clientGot) => {
+			if (err) { console.error(err); }
+				client = clientGot;
+		
+				db = client.db('logos').catch(err => {
+				console.error(err);
+				reject(err);
+			});
+			resolve(db);
 		});
-		return _client;
-	} catch (error) {
-		console.error(error);
-	}
+	});
+	
+	return deferred;
 }
 
 getDb();
@@ -893,8 +901,9 @@ async function readOrCreateModule (name, path, cb) {
 }
 
 async function readAll (tree, availableChildMap, totalExpressionMap, limit, cb) {
+	const db = await getDb();
 	// Get the collection
-	const collection = db.collection('Diary');
+	const collection = await db.collection('Diary');
 
 	// Query the collection
 	const cursor = collection.find({}, { limit: limit });
