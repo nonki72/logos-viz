@@ -888,7 +888,60 @@ async function readOrCreateModule (name, path, cb) {
   return cb(data);
 }
 
-async function readAll (tree, availableChildMap, totalExpressionMap, limit, cb) {
+// fill available child map advertisements with this entity (if id matches)
+async function applyEntityToTotalExpressionMap(entity, nodes, totalExpressionMap) {
+	// iterate over the array of children
+	await nodes.forEach(nodes, (node) => {
+		if (totalExpressionMap.includes(entity.id)) {
+			if ((entity.def1 && !def1pulled) || (entity.def2 && !def2pulled)) {
+				entity.children.push(node);
+			}
+		} else {
+			throw new Error((
+			  "No entity found in totalExpressionMap!: " + JSON.stringify(entity) + " " +
+			  "Can't place node: " + JSON.stringify(node)));
+		}
+	});
+}
+
+async function parseTree (tree, totalExpressionMap) {
+	// process the root node
+    const entity = tree;
+	var id = entity.id;
+	// store reference in expression map for convenient lookup by id
+	totalExpressionMap[id] = entity;
+	// add entity (now a node) to rode node
+	entity.children = {};
+	tree[id] = entity;
+	// see if this entity's id is found in the listing of available child references
+	if (id in availableChildMap) {
+		// obtain the node(s) that advertise and replace the references with the entity
+		// and then erasing the advertisement
+			tree[id].nodes = availableChildMap[id].nodes;
+			await applyEntityToTotalExpressionMap(entity, nodes, totalExpressionMap);
+	}
+	var def1pulled = false;
+	var def2pulled = false;
+	// also check all root children to match def1 or def2
+	// and pull them in
+	if (entity.def1 && entity.def1 in tree) {
+		var def1id = entity.def1;
+		entity.def1 = tree[def1id];
+		delete tree[def1id];
+		def1pulled = true;
+	}
+	if (entity.def2 && entity.def2 in tree) {
+		var def2id = entity.def2;
+		entity.def2 = tree[def2id];
+		delete tree[def2id];
+		def2pulled = true;
+	}
+	await tree.children.forEach(async child => {
+		await parseTree(child, totalExpressionMap);
+	});
+}
+
+async function readAll (tree, totalExpressionMap, limit, cb) {
 	const client = await getMongoClient();
 	const db = client.db("logos");
 	// Get the collection
@@ -904,44 +957,9 @@ async function readAll (tree, availableChildMap, totalExpressionMap, limit, cb) 
 		return cb(null);
 	}
 
-	// Iterate over the array and print the documents
-	entities.forEach(entity => {
-		var id = entity.id;
-		// store reference in expression map
-		totalExpressionMap[id] = entity;
-		// see if this entity's id is found in the listing of available child references
-		if (id in availableChildMap) {
-			// obtain the node(s) that advertise and replace the references with the entity
-			// and then erasing the advertisement
-				var nodes = availableChildMap[id];
-				for (var i = 0; i < nodes.length; i++) {
-					applyEntityToAvailableChild(id, entity, nodes[i]);
-				}
-		} else {
-			// simple case, add to root node
-			tree[id] = entity;
-		}
-		var def1pulled = false;
-		var def2pulled = false;
-			// also check all root children to match def1 or def2
-			// and pull them in
-			if (entity.def1 && entity.def1 in tree) {
-				var def1id = entity.def1;
-				entity.def1 = tree[def1id];
-				delete tree[def1id];
-				def1pulled = true;
-			}
-			if (entity.def2 && entity.def2 in tree) {
-				var def2id = entity.def2;
-				entity.def2 = tree[def2id];
-				delete tree[def2id];
-				def2pulled = true;
-			}
-		// advertise open references (if any)
-			if ((entity.def1 && !def1pulled) || (entity.def2 && !def1pulled)) {
-				availableChildMap[id] = entity;
-			}
-	});
+	// populate the whole tree
+	await parseTree(tree, totalExpressionMap);
+
 	return cb(null);
 }
 

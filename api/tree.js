@@ -86,6 +86,7 @@ function toDndTreeFormat(tree, totalExpressionMap) {
   var dndTree = {"name": "root", "children":[]};
   var keys = Object.keys(tree);
   for(var i = 0; i < keys.length; i++) {
+    if (tree[id].depth <= 1) continue; // dont list shallow branches
     var id = keys[i];
     var node = tree[id];
     addNameAndDefsToChildren(node, totalExpressionMap);
@@ -100,10 +101,9 @@ function toDndTreeFormat(tree, totalExpressionMap) {
  * Retrieve a entity.
  */
 router.get('/', function get (req, res, next) {
-  var tree = {};
-  var availableChildMap = {};
-  var totalExpressionMap = {};
-  dataLib.readAll(tree, availableChildMap, totalExpressionMap, 10000, function (err) {
+  var tree = {}; // a tree of the nodes (entities with children map)
+  var totalExpressionMap = {}; // a flat map of the entities
+  dataLib.readAll(tree, totalExpressionMap, 10000, function (err) {
    if (err) {
     return next(err);
    }
