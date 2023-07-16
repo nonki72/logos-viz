@@ -103,7 +103,7 @@ function toDndTreeFormat(tree, totalExpressionMap) {
 router.get('/', function get (req, res, next) {
   var tree = {}; // a tree of the nodes (entities with children map)
   var totalExpressionMap = {}; // a flat map of the entities
-  dataLib.readAll(tree, totalExpressionMap, 10000, function (err) {
+  dataLib.readAll(tree, totalExpressionMap, 1000, function (err) {
    if (err) {
     return next(err);
    }
