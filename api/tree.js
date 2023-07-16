@@ -103,7 +103,7 @@ router.get('/', function get (req, res, next) {
   var tree = {};
   var availableChildMap = {};
   var totalExpressionMap = {};
-  dataLib.readAll(tree, availableChildMap, totalExpressionMap, function (err) {
+  dataLib.readAll(tree, availableChildMap, totalExpressionMap, 10000, function (err) {
    if (err) {
     return next(err);
    }

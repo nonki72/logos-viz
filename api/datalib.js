@@ -13,27 +13,15 @@ var client = null;
 var db = null;
 
 
-async function getDb() {
+async function getMongoClient() {
 	if (db != null) return db;
 	const url = mongoConfig.url;
-
-	const deferred = new Promise((resolve, reject) => {
-		MongoClient.connect(url, (err, clientGot) => {
-			if (err) { console.error(err); }
-				client = clientGot;
-		
-				db = client.db('logos').catch(err => {
-				console.error(err);
-				reject(err);
-			});
-			resolve(db);
-		});
-	});
-	
-	return deferred;
+	const client = new MongoClient(url);
+	await client.connect();
+	return client;
 }
 
-getDb();
+getMongoClient();
 //                          ########### READ FUNCTIONS ############
 
 
@@ -45,7 +33,7 @@ async function readByEquivalenceClass (id) {
 	const query = {
 		'ecid': entity.ecid
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -155,7 +143,7 @@ async function readAbstractionByRandomValue (cb) {
 		'type': 'abs',
 		'rand': {$lte: Math.random()}
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -178,7 +166,7 @@ async function readFreeIdentifierByRandomValue (cb) {
 	const sample = {$sample:{
 		size: 1
 	}};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -209,7 +197,7 @@ async function readFreeIdentifierValueByRandomValue (fntype, fnmod, fnclas, cb) 
 	const sample = {$sample:{
 		size: 1
 	}};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -242,7 +230,7 @@ async function readFreeIdentifierFnByRandomValue (fntype, fnclas, cb) {
 	const sample = {$sample:{
 		size: 1
 	}};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -264,7 +252,7 @@ async function readFreeIdentifierFnThatTakesArgsByRandomValue (cb) {
 	const sample = {$sample:{
 		size: 1
 	}};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -294,7 +282,7 @@ async function readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue (argtype
 	const sample = {$sample:{
 		size: 1
 	}};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -312,7 +300,7 @@ async function readFreeIdentifierByName (name, cb) {
 		'type': 'free',
 		'name': name
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -328,7 +316,7 @@ async function readFreeIdentifierByFn (fn, cb) {
 		'type': 'free',
 		'fn': fn
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -341,7 +329,7 @@ async function readFreeIdentifierByFn (fn, cb) {
 
 // randomly reads a fragment
 async function readByRandomValue (type, cb) {
-	var client = await getDb();
+	var client = await getMongoClient();
 	const db = client.db("logos");
 	var res = null;
 	let cursor = await db.collection('Diary').aggregate([
@@ -437,7 +425,7 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, fnmod, fnclas, cb
 	const sample = {$sample:{
 		size: 1
 	}};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -460,7 +448,7 @@ async function readWordFrequency (word, cb) {
 	const query = {
 		'word': word
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -474,7 +462,7 @@ async function readWordFrequency (word, cb) {
 async function readWordFrequencyAll (cb) {
 	const query = {
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -489,7 +477,7 @@ async function readWordFrequencyAtLeast (float, cb) {
 	const query = {
 		'frequency': {$gte: float}
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -505,7 +493,7 @@ async function readById (id, cb) {
 	const query = {
 		'id': objId
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -521,7 +509,7 @@ async function readClassByNameAndModule(name, mod, cb) {
 		'name': name,
 		'module': mod
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -536,7 +524,7 @@ async function readModuleByName(name, cb) {
 	const query = {
 		'name': name
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -551,7 +539,7 @@ async function readModuleByPath(path, cb) {
 	const query = {
 		'path': path
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -569,7 +557,7 @@ async function readModuleByPath(path, cb) {
 
 
 async function readOrCreateWordFrequency ( word, freq, cb ) {
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	var query = {'word': word};
 	try {
@@ -600,7 +588,7 @@ async function readOrCreateAbstraction (name, definition2, cb) {
 //		'name': name,
 		'def2': definition2
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -637,7 +625,7 @@ async function readOrCreateApplication (definition1, definition2, cb) {
 		'def1': definition1,
 		'def2': definition2
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -673,7 +661,7 @@ async function readOrCreateFreeIdentifier ( name, cb ) {
 		'type': 'id',
 		'name': name
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -709,7 +697,7 @@ async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnmo
 		'type': 'free',
 		'name': name
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -761,7 +749,7 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
 		'def1': location1,
 		'def2': location2
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
   var db;
 	try {
 		db = client.db("logos");
@@ -840,7 +828,7 @@ async function readOrCreateClass (name, module, cb) {
 	const query = {
 		'name': name
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -872,7 +860,7 @@ async function readOrCreateModule (name, path, cb) {
 	const query = {
 		'name': name
 	};
-	var client = await getDb();
+	var client = await getMongoClient();
 	var res = null;
 	try {
 		const db = client.db("logos");
@@ -901,7 +889,8 @@ async function readOrCreateModule (name, path, cb) {
 }
 
 async function readAll (tree, availableChildMap, totalExpressionMap, limit, cb) {
-	const db = await getDb();
+	const client = await getMongoClient();
+	const db = client.db("logos");
 	// Get the collection
 	const collection = await db.collection('Diary');
 
