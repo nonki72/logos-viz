@@ -39,25 +39,8 @@ function getExpressionFromDef(def, totalExpressionMap) {
   }
 }
 
-function addNameAndDefsToChildren(node, totalExpressionMap) {
+function addNameAndExpression(node, totalExpressionMap) {
   if ('expression' in node && node.expression !== null) return;
-  if (!('children' in node)) { 
-    node.children = [];
-  }
-  // add 'def's to children
-  if ('def1' in node && node.entity.def1 !== null && typeof node.entity.def1 === 'object') {
-    node.children.push(node.entity.def1);
-    addNameAndDefsToChildren(node.entity.def1, totalExpressionMap);
-  } else if ('def1' in node && typeof node.entity.def1 === 'string') {
-    node.children.push({"name": node.entity.def1});
-  }
-  if ('def2' in node && node.entity.def2 !== null && typeof node.entity.def2 === 'object') {
-    node.children.push(node.entity.def2);
-    addNameAndDefsToChildren(node.entity.def2, totalExpressionMap);
-  } else if ('def2' in node && typeof node.entity.def2 === 'string') {
-    node.children.push({"name": node.entity.def2});
-  }
-
   // add name and expression
   if (node.entity.type == "sub") {
     node.expression = getExpressionFromDef(node.entity.def2, totalExpressionMap);
@@ -78,8 +61,6 @@ function addNameAndDefsToChildren(node, totalExpressionMap) {
   } else {
     throw new Error("unknown expression type:" + node.entity.type);
   }
-  node.expression = node.expression;
-
 }
 
 function toDndTreeFormat(tree, totalExpressionMap) {
@@ -90,12 +71,12 @@ function toDndTreeFormat(tree, totalExpressionMap) {
     children: [],
     entity: element.entity
   };
+  addNameAndExpression(node, totalExpressionMap);
   for(var j = 0; j < node.children.length; j++) {
     const childNode = node.children[j];
     const childTree = toDndTreeFormat(childNode, totalExpressionMap);
+    node.children.push(childTree);
   }
-  addNameAndDefsToChildren(node, totalExpressionMap);
-  node.children.push(node);
   return node;
 }
 
