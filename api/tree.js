@@ -86,7 +86,7 @@ function toDndTreeFormat(tree, totalExpressionMap) {
   var dndTree = {"name": "root", "children":[]};
   var keys = Object.keys(tree);
   for(var i = 0; i < keys.length; i++) {
-    if (tree[id].depth <= 1) continue; // dont list shallow branches
+    if (tree[id].depth <= 2) continue; // dont list shallow branches
     var id = keys[i];
     var node = tree[id];
     addNameAndDefsToChildren(node, totalExpressionMap);

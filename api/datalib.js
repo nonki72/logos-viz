@@ -889,6 +889,20 @@ async function readOrCreateModule (name, path, cb) {
   return cb(data);
 }
 
+async function computeDepths(node) {
+	// base cases
+	if (node == null) return 0;
+	if (node.children.length == 0) return 1;
+	var maxDepth = 1;
+	node.children.forEach(child => {
+		// recursively compute depth all the way down the chain
+		const depth = computeDepths(child) + 1;
+		if (depth > maxDepth) maxDepth = depth;
+	});
+	node.depth = maxDepth;
+	return node.depth;
+}
+
 // fill available child map advertisements with this entity (if id matches)
 async function applyNodeToTotalExpressionMap(node, availableParentMap, totalExpressionMap) {
 	if (!(Object.keys(node.id in totalExpressionMap))) {
@@ -929,7 +943,9 @@ async function parseTree (tree, totalExpressionMap) {
 	// recursively parse all entities
 	await Object.values(totalExpressionMap).forEach(async entity => {
 		// make entity into a node (possibly incomplete)
-		const node = entity;
+		const node = {}
+		node.id = entity.id;
+		node.entity = entity;
 		node.children = [];
 		node.parent = null;
 		// store reference in expression map for convenient lookup by id
@@ -942,6 +958,8 @@ async function parseTree (tree, totalExpressionMap) {
 		if (!node.parent) {
 			tree.node = node;
 		}
+		// compute depths
+		await computeDepths(node, tree);
 	});
 }
 
