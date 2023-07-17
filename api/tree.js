@@ -101,9 +101,11 @@ function toDndTreeFormat(tree, totalExpressionMap) {
  * Retrieve a entity.
  */
 router.get('/', function get (req, res, next) {
+  var limit = 50000;
+  if (req.params.limit != null && Number.isInteger(req.params.limit)) limit = req.params.limit;
   var tree = {}; // a tree of the nodes (entities with children map)
   var totalExpressionMap = {}; // a flat map of the entities
-  dataLib.readAll(tree, totalExpressionMap, 1000, function (err) {
+  dataLib.readAll(tree, totalExpressionMap, limit, function (err) {
    if (err) {
     return next(err);
    }

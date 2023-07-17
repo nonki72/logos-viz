@@ -901,6 +901,7 @@ async function computeDepths(node) {
 		if (depth > maxDepth) maxDepth = depth;
 	});
 	node.element.depth = maxDepth;
+	console.log("Computed depth for: " + node.element.id + " as " + maxDepth);
 	return maxDepth;
 }
 
@@ -967,8 +968,8 @@ async function parseTree (tree, totalExpressionMap) {
 	console.log("Computing depths...");
 	await Object.values(totalExpressionMap).forEach(async node => {
 		// compute depths
-		console.log(util.inspect(node, true, 2));
 		const depth = await computeDepths(node);
+		//console.log(util.inspect(node, true, 2));
 		if (depth > maxDepth) maxDepth = depth;
 	});
 	return maxDepth;
@@ -990,8 +991,10 @@ async function readAll (tree, totalExpressionMap, limit, cb) {
 		return cb(null);
 	}
 
+	var count = 0;
 	await entities.forEach(entity => {
 		totalExpressionMap[entity.id] = entity;
+		console.log(count++ + ".");
 	});
 	// populate the whole tree
 	const maxDepth = await parseTree(tree, totalExpressionMap);
