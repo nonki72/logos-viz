@@ -40,45 +40,45 @@ function getExpressionFromDef(def, totalExpressionMap) {
 }
 
 function addNameAndDefsToChildren(node, totalExpressionMap) {
-  if ('expression' in node && node.expression !== null) return;
+  if ('expression' in node && node.element.entity.expression !== null) return;
   if (!('children' in node)) { 
-    node.children = [];
+    node.element.children = [];
   }
   // add 'def's to children
-  if ('def1' in node && node.def1 !== null && typeof node.def1 === 'object') {
-    node.children.push(node.def1);
-    addNameAndDefsToChildren(node.def1, totalExpressionMap);
-  } else if ('def1' in node && typeof node.def1 === 'string') {
-    node.children.push({"name": node.def1});
+  if ('def1' in node && node.element.entity.def1 !== null && typeof node.element.entity.def1 === 'object') {
+    node.element.children.push(node.element.entity.def1);
+    addNameAndDefsToChildren(node.element.entity.def1, totalExpressionMap);
+  } else if ('def1' in node && typeof node.element.entity.def1 === 'string') {
+    node.element.children.push({"name": node.element.entity.def1});
   }
-  if ('def2' in node && node.def2 !== null && typeof node.def2 === 'object') {
-    node.children.push(node.def2);
-    addNameAndDefsToChildren(node.def2, totalExpressionMap);
-  } else if ('def2' in node && typeof node.def2 === 'string') {
-    node.children.push({"name": node.def2});
+  if ('def2' in node && node.element.entity.def2 !== null && typeof node.element.entity.def2 === 'object') {
+    node.element.children.push(node.element.entity.def2);
+    addNameAndDefsToChildren(node.element.entity.def2, totalExpressionMap);
+  } else if ('def2' in node && typeof node.element.entity.def2 === 'string') {
+    node.element.children.push({"name": node.element.entity.def2});
   }
 
   // add name and expression
-  if (node.type == "sub") {
-    node.expression = getExpressionFromDef(node.def2, totalExpressionMap);
-    node.name = "sub(" + node.styp + "):" + node.id.toString();
-  } else if (node.type == "abs") {
-    node.expression = "λ" + node.name + "." + getExpressionFromDef(node.def2, totalExpressionMap);
-    node.name = "abs(" + node.name + "):" + node.id.toString() + " => " + node.expression;
-  } else if (node.type == "app") {
-    node.expression = getExpressionFromDef(node.def1, totalExpressionMap) 
-                    + getExpressionFromDef(node.def2, totalExpressionMap);
-    node.name = "app:" + node.id.toString() + " => " + node.expression;
-  } else if (node.type == "id") {
-    node.expression = "[" + node.indx + "]";
-    node.name = "id(" + node.indx + "):" + node.id.toString();
-  } else if (node.type == "free") {
-    node.expression = "[" + node.name + "]";
-    node.name = "free(" + node.name + "):" + node.id.toString();
+  if (node.element.entity.type == "sub") {
+    node.element.entity.expression = getExpressionFromDef(node.element.entity.def2, totalExpressionMap);
+    node.element.entity.name = "sub(" + node.element.styp + "):" + node.element.id.toString();
+  } else if (node.element.entity.type == "abs") {
+    node.element.entity.expression = "λ" + node.element.entity.name + "." + getExpressionFromDef(node.element.entity.def2, totalExpressionMap);
+    node.element.entity.name = "abs(" + node.element.entity.name + "):" + node.element.id.toString() + " => " + node.element.entity.expression;
+  } else if (node.element.entity.type == "app") {
+    node.element.entity.expression = getExpressionFromDef(node.element.entity.def1, totalExpressionMap) 
+                    + getExpressionFromDef(node.element.entity.def2, totalExpressionMap);
+    node.element.entity.name = "app:" + node.element.id.toString() + " => " + node.element.entity.expression;
+  } else if (node.element.entity.type == "id") {
+    node.element.entity.expression = "[" + node.element.indx + "]";
+    node.element.entity.name = "id(" + node.element.indx + "):" + node.element.id.toString();
+  } else if (node.element.entity.type == "free") {
+    node.element.entity.expression = "[" + node.element.entity.name + "]";
+    node.element.entity.name = "free(" + node.element.entity.name + "):" + node.element.id.toString();
   } else {
-    throw new Error("unknown expression type:" + node.type);
+    throw new Error("unknown expression type:" + node.element.entity.type);
   }
-  totalExpressionMap[node.id].expression = node.expression;
+  totalExpressionMap[node.element.id].expression = node.element.entity.expression;
 
 }
 
@@ -86,7 +86,7 @@ function toDndTreeFormat(tree, totalExpressionMap) {
   var dndTree = {"name": "root", "children":[]};
   var keys = Object.keys(tree);
   for(var i = 0; i < keys.length; i++) {
-    if (tree[id].depth <= 2) continue; // dont list shallow branches
+    if (tree.depth <= 2) continue; // dont list shallow branches
     var id = keys[i];
     var node = tree[id];
     addNameAndDefsToChildren(node, totalExpressionMap);

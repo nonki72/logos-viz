@@ -892,37 +892,39 @@ async function readOrCreateModule (name, path, cb) {
 async function computeDepths(node) {
 	// base cases
 	if (node == null) return 0;
-	if (node.children.length == 0) return 1;
+	if (node.element.children.length == 0) return 1;
 	var maxDepth = 1;
-	node.children.forEach(child => {
+	node.element.children.forEach(async child => {
 		// recursively compute depth all the way down the chain
-		const depth = computeDepths(child) + 1;
+		if (!('children' in child)) child['children'] = [];
+		const depth = await computeDepths(child) + 1;
 		if (depth > maxDepth) maxDepth = depth;
 	});
-	node.depth = maxDepth;
-	return node.depth;
+	node.element.depth = maxDepth;
+	return maxDepth;
 }
 
 // fill available child map advertisements with this entity (if id matches)
 async function applyNodeToTotalExpressionMap(node, availableParentMap, totalExpressionMap) {
-	if (!(Object.keys(node.id in totalExpressionMap))) {
+	if (!(Object.keys(node.element.id in totalExpressionMap))) {
 		throw new Error((
-		  "No node found in totalExpressionMap!: " + node.id + "\n" +
+		  "No node found in totalExpressionMap!: " + node.element.id + "\n" +
 		  "totalExpressionMap: " + JSON.stringify(Object.keys(totalExpressionMap))));
 	}
 	// find parent (will be null because this is the only traversal unless rerunning function)
-	node.parent = availableParentMap[node.id];
-	if (node.parent == null) {
+	node.element.parent = availableParentMap[node.element.id];
+	if (node.element.parent == null) {
 		// no parent yet
 		return false;
 	}
 	// add child to parent
-	parent.children.push(node);
+	const parent = totalExpressionMap[node.element.parent];
+	parent.element.children.push(node);
 	// add parent to child
-	node.parent = parent;
+	node.element.parent = parent;
 	// remove advertisement if all children have been added
-	if ((parent.def1 == node.id && !parent.includes('def2')) || // only has one def, fulfilled
-        (parent.def2 == node.id && parent.children.length == 2)) { // has 2 defs, fulfilled
+	if ((parent.element.entity.def1 == node.element.id && !('def2' in parent.element.entity)) || // only has one def, fulfilled
+        (parent.element.entity.def2 == node.element.id && parent.element.children.length == 2)) { // has 2 defs, fulfilled
 	  delete availableParentMap[parent.id];
 	}
 	return true;
@@ -930,37 +932,46 @@ async function applyNodeToTotalExpressionMap(node, availableParentMap, totalExpr
 
 // advertise (if applicable) that this node needs child nodes to be added to its children map
 function advertiseChildrenNeeded(node, availableParentMap) {
-	if (node.def1 != null) {
-		availableParentMap[node.def1] = node.id;
+	if (node.element.entity.def1 != null) {
+		availableParentMap[node.element.entity.def1] = node.element.id;
 	}
-	if (node.def2) {
-		availableParentMap[node.def2] = node.id;
+	if (node.element.entity.def2) {
+		availableParentMap[node.element.entity.def2] = node.element.id;
 	}
 }
 
 async function parseTree (tree, totalExpressionMap) {
 	const availableParentMap = {};
+	var maxDepth = 0;
 	// recursively parse all entities
 	await Object.values(totalExpressionMap).forEach(async entity => {
 		// make entity into a node (possibly incomplete)
-		const node = {}
-		node.id = entity.id;
-		node.entity = entity;
-		node.children = [];
-		node.parent = null;
+		const node = {'element':{}};
+		node.element['id'] = entity.id;
+		node.element['entity'] = entity;
+		node.element['children'] = [];
+		node.element['parent'] = null;
+		node.element['depth'] = null;
 		// store reference in expression map for convenient lookup by id
-		totalExpressionMap[node.id] = node;
-		// obtain the node(s) that advertise and update their children map to contain this node
-		await applyNodeToTotalExpressionMap(node, availableParentMap, totalExpressionMap);
+		totalExpressionMap[node.element.id] = node;
 		// advertise (if applicable) that this node needs child nodes to be added to its children map
 		await advertiseChildrenNeeded(node, availableParentMap);
+		// obtain the node(s) that advertise and update their children map to contain this node
+		await applyNodeToTotalExpressionMap(node, availableParentMap, totalExpressionMap);
 		// if no parents, it is the rode node
-		if (!node.parent) {
+		if (!node.element.parent) {
 			tree.node = node;
 		}
-		// compute depths
-		await computeDepths(node, tree);
 	});
+	// iterate through all again to recursively compute depths
+	console.log("Computing depths...");
+	await Object.values(totalExpressionMap).forEach(async node => {
+		// compute depths
+		console.log(util.inspect(node, true, 2));
+		const depth = await computeDepths(node);
+		if (depth > maxDepth) maxDepth = depth;
+	});
+	return maxDepth;
 }
 
 async function readAll (tree, totalExpressionMap, limit, cb) {
@@ -983,9 +994,11 @@ async function readAll (tree, totalExpressionMap, limit, cb) {
 		totalExpressionMap[entity.id] = entity;
 	});
 	// populate the whole tree
-	await parseTree(tree, totalExpressionMap);
+	const maxDepth = await parseTree(tree, totalExpressionMap);
 
-	console.log("Completed parseTree.");
+	console.log("Completed parseTree.\n" + 
+	            "Size: " + Object.keys(totalExpressionMap).length + "\n" +
+				"Max depth: " + maxDepth);
 
 	return cb(null);
 }
