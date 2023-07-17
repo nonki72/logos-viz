@@ -4,7 +4,7 @@ const mongoConfig = require('../config/mongo.json');
 var MongoClient = mongo.MongoClient;
 var ObjectID = mongo.ObjectID;
 const Sql = require('./sql');
-const Stringify = require('../lib/stringify');
+var util = require('util');
 
 const connectOption = {
     useNewUrlParser: true,
@@ -891,14 +891,14 @@ async function readOrCreateModule (name, path, cb) {
 
 // fill available child map advertisements with this entity (if id matches)
 async function applyNodeToTotalExpressionMap(node, availableParentMap, totalExpressionMap) {
-	if (!Object.keys(totalExpressionMap).includes(node.id)) {
+	if (!(Object.keys(node.id in totalExpressionMap))) {
 		throw new Error((
-		  "No entity found in totalExpressionMap!: " + Stringify.stringify(node) + "\n" +
-		  "totalExpressionMap: " + Stringify.stringify(totalExpressionMap)));
+		  "No node found in totalExpressionMap!: " + node.id + "\n" +
+		  "totalExpressionMap: " + JSON.stringify(Object.keys(totalExpressionMap))));
 	}
-	// find parent
-	const parent = availableParentMap[node.id];
-	if (!parent) {
+	// find parent (will be null because this is the only traversal unless rerunning function)
+	node.parent = availableParentMap[node.id];
+	if (node.parent == null) {
 		// no parent yet
 		return false;
 	}
@@ -914,37 +914,29 @@ async function applyNodeToTotalExpressionMap(node, availableParentMap, totalExpr
 	return true;
 }
 
-function advertiseChildrenNeeded(entity) {
-	var def1pulled = false;
-	var def2pulled = false;
-
-	if (entity.def1 && entity.def1 in tree) {
-		var def1id = entity.def1;
-		entity.def1 = tree[def1id];
-		delete tree[def1id];
-		def1pulled = true;
+// advertise (if applicable) that this node needs child nodes to be added to its children map
+function advertiseChildrenNeeded(node, availableParentMap) {
+	if (node.def1 != null) {
+		availableParentMap[node.def1] = node.id;
 	}
-	if (entity.def2 && entity.def2 in tree) {
-		var def2id = entity.def2;
-		entity.def2 = tree[def2id];
-		delete tree[def2id];
-		def2pulled = true;
+	if (node.def2) {
+		availableParentMap[node.def2] = node.id;
 	}
 }
 
 async function parseTree (tree, totalExpressionMap) {
 	const availableParentMap = {};
 	// recursively parse all entities
-	await totalExpressionMap.forEach(async entity => {
-		var id = entity.id;
+	await Object.values(totalExpressionMap).forEach(async entity => {
 		// make entity into a node (possibly incomplete)
-		entity.children = {};
-		entity.parent = null;
+		const node = entity;
+		node.children = [];
+		node.parent = null;
 		// store reference in expression map for convenient lookup by id
-		totalExpressionMap[id] = node;
+		totalExpressionMap[node.id] = node;
 		// obtain the node(s) that advertise and update their children map to contain this node
 		await applyNodeToTotalExpressionMap(node, availableParentMap, totalExpressionMap);
-		// advertise (if applicable) that this child needs child nodes to be added to its children map
+		// advertise (if applicable) that this node needs child nodes to be added to its children map
 		await advertiseChildrenNeeded(node, availableParentMap);
 		// if no parents, it is the rode node
 		if (!node.parent) {
@@ -969,7 +961,9 @@ async function readAll (tree, totalExpressionMap, limit, cb) {
 		return cb(null);
 	}
 
-	totalExpressionMap = entities;
+	await entities.forEach(entity => {
+		totalExpressionMap[entity.id] = entity;
+	});
 	// populate the whole tree
 	await parseTree(tree, totalExpressionMap);
 
