@@ -947,7 +947,8 @@ async function parseTree (tree, totalExpressionMap) {
 	// recursively parse all entities
 	await Object.values(totalExpressionMap).forEach(async entity => {
 		// make entity into a node (possibly incomplete)
-		const node = {'element':{}};
+		const node = {};
+		node.element = {};
 		node.element['id'] = entity.id;
 		node.element['entity'] = entity;
 		node.element['children'] = [];
@@ -961,7 +962,7 @@ async function parseTree (tree, totalExpressionMap) {
 		await applyNodeToTotalExpressionMap(node, availableParentMap, totalExpressionMap);
 		// if no parents, it is the rode node
 		if (!node.element.parent) {
-			tree.node = node;
+			tree.element = node.element;
 		}
 	});
 	// iterate through all again to recursively compute depths
