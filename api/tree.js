@@ -25,22 +25,19 @@ var router = express.Router();
 router.use(bodyParser.json());
 
 function getExpressionFromDef(def, totalExpressionMap) {
-  if (def !== null && typeof def === 'object') {
-    if ('expression' in def) {
-      return def.expression;
-    } else {
-      return totalExpressionMap[def.id].expression; // assume already made
-    }
-  } else if (def in totalExpressionMap) {
-    addNameAndDefsToChildren(totalExpressionMap[def], totalExpressionMap);
-    return totalExpressionMap[def].expression;
+  if (def in totalExpressionMap) {
+    const element = totalExpressionMap[def]
+    const node = toDndTreeFormat(element, totalExpressionMap);
+    return node.expression;
   } else {
     return "[?]";
   }
 }
 
 function addNameAndExpression(node, totalExpressionMap) {
-  if ('expression' in node && node.expression !== null) return;
+  if (!('expression' in node) || node.expression == null) {
+    return;
+  }
   // add name and expression
   if (node.entity.type == "sub") {
     node.expression = getExpressionFromDef(node.entity.def2, totalExpressionMap);
@@ -63,14 +60,18 @@ function addNameAndExpression(node, totalExpressionMap) {
   }
 }
 
-function toDndTreeFormat(tree, totalExpressionMap) {
-  var element = tree.element;
+function toDndTreeFormat(element, totalExpressionMap) {
+  if ('element' in element) element = element.element;
   if (element.depth <= 0) return ; // dont list shallow branches
+  var name;
+  if (!('name' in element.entity)) name = "Anonymous type: " + element.entity.type;
+  else name = node.name;
   var node = {
-    name: element.entity.name,
+    name: name,
     children: [],
     entity: element.entity
   };
+  
   addNameAndExpression(node, totalExpressionMap);
   for(var j = 0; j < node.children.length; j++) {
     const childNode = node.children[j];
@@ -86,7 +87,7 @@ function toDndTreeFormat(tree, totalExpressionMap) {
  * Retrieve a entity.
  */
 router.get('/', function get (req, res, next) {
-  var limit = 10000;
+  var limit = 1000;
   if (req.params.limit != null && Number.isInteger(req.params.limit)) limit = req.params.limit;
   var tree = {}; // a tree of the nodes (entities with children map)
   var totalExpressionMap = {}; // a flat map of the entities
@@ -94,7 +95,7 @@ router.get('/', function get (req, res, next) {
    if (err) {
     return next(err);
    }
-   var dndTree = toDndTreeFormat(tree, totalExpressionMap);
+   var dndTree = toDndTreeFormat(tree.element, totalExpressionMap);
    res.json(dndTree);
  });
 });
